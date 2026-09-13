@@ -1,0 +1,6 @@
+from pathlib import Path
+root=Path('/home/ubuntu/signal-game/client/src/game')
+p=root/'world.ts';s=p.read_text();s=s.replace('readonly width = 960; readonly height = 540; readonly floorY = 410;','readonly width = 960; readonly height = 540; readonly floorY = 410; readonly playerHalfWidth = 18; readonly playerHalfHeight = 44;');s=s.replace('this.player.y>=366','this.player.y>=this.floorY-this.playerHalfHeight').replace('this.player.y>366','this.player.y>this.floorY-this.playerHalfHeight').replace('this.player.y=366','this.player.y=this.floorY-this.playerHalfHeight').replace('Math.abs(this.player.x-p.x)<26','Math.abs(this.player.x-p.x)<this.playerHalfWidth+10');p.write_text(s)
+for name in ['corridor.ts','archives.ts','vault.ts','campaign.ts']:
+ p=root/name;s=p.read_text();s=s.replace('this.player.y>=366','this.player.y>=this.floorY-this.playerHalfHeight').replace('this.player.y>366','this.player.y>this.floorY-this.playerHalfHeight').replace('this.player.y=366','this.player.y=this.floorY-this.playerHalfHeight').replace('Math.abs(this.player.x-p.x)<28','Math.abs(this.player.x-p.x)<this.playerHalfWidth+10');p.write_text(s)
+print('collision constants are now used by jump, landing, and pickup overlap')
