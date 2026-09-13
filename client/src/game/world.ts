@@ -1,4 +1,4 @@
-export type GameMode = 'title' | 'play' | 'journal' | 'win' | 'lose';
+export type GameMode = 'title' | 'play' | 'win' | 'lose';
 export type PickupKind = 'evidence' | 'key';
 export type Pickup = { x:number; y:number; kind:PickupKind; id:number; label:string; taken:boolean };
 
@@ -23,8 +23,7 @@ export class GameWorld {
   hasKey() { return this.pickups.some(p=>p.kind==='key' && p.taken); }
   cameraSafeZoneName() { if(this.player.x<210) return 'RECEPTION DESK'; if(this.player.x>=476 && this.player.x<=550) return 'CART SHADOW'; if(this.player.x>=800 && this.player.x<=875) return 'LOCKER POCKET'; return null; }
   cameraSeesPlayer() { const beamCenter=690+Math.sin(this.time*2*Math.PI/6.2)*250; return !this.player.hidden && !this.cameraSafeZoneName() && !this.player.crouching && Math.abs(this.player.x-beamCenter)<72 && this.player.y>300; }
-  toggleJournal() { if (this.mode==='play' || this.mode==='journal') this.mode = this.mode==='play' ? 'journal' : 'play'; }
-  press(key:string) { this.keys.add(key.toLowerCase()); if (key.toLowerCase()==='m') this.muted=!this.muted; if (key.toLowerCase()==='e' && this.mode==='play') { const spot = this.nearHide(); if (spot && !this.player.hidden && !this.player.crouching) { this.player.crouching=true; this.player.crouchTimer=.22; } else if (spot && this.player.hidden) { this.player.hidden=false; this.player.crouching=false; } } }
+  press(key:string) { if (key.toLowerCase()==='m') { this.muted=!this.muted; return; } if (this.mode!=='play') return; this.keys.add(key.toLowerCase()); if (key.toLowerCase()==='e' && this.mode==='play') { const spot = this.nearHide(); if (spot && !this.player.hidden && !this.player.crouching) { this.player.crouching=true; this.player.crouchTimer=.22; } else if (spot && this.player.hidden) { this.player.hidden=false; this.player.crouching=false; } } }
   release(key:string) { this.keys.delete(key.toLowerCase()); }
   nearHide() { return (this.player.x < 185 || Math.abs(this.player.x-370)<42 || this.player.x>835) ? true : false; }
   nearJammer() { return Math.abs(this.player.x-704)<42 && !this.player.hidden && !this.player.crouching; }
@@ -70,7 +69,6 @@ export class GameWorld {
     this.keys.clear();
     const target=this.pickups.find(p=>!p.taken)?.x ?? 900;
     if(this.player.x<target-8) this.keys.add('d'); else if(this.player.x>target+8) this.keys.add('a');
-    if(this.nearHide() && this.player.x>820 && !this.player.hidden) this.keys.add('e');
     if(this.player.x>875 && this.hasKey() && this.evidenceCount()===3) this.keys.add('d');
   }
 }

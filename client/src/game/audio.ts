@@ -8,7 +8,6 @@ export class AudioDirector {
   private lastStep = 0;
   private muted = false;
   unlock() {
-    if (typeof window !== 'undefined') { const requested=Number(new URLSearchParams(window.location.search).get('stage')||1); if (requested>=1 && requested<=4) this.stageIndex=requested; }
     if (!this.ctx) this.ctx = new AudioContext();
     if (this.ctx.state === 'suspended') void this.ctx.resume();
     if (!this.ambience && this.ctx) {
@@ -20,7 +19,7 @@ export class AudioDirector {
     }
     this.ensureMusic();
   }
-  setStage(stage:number) { this.stageIndex=Math.max(1,Math.min(4,stage)); this.retuneMusic(); }
+  setStage(stage:number) { this.stageIndex=Math.max(1,Math.min(9,Math.floor(stage)||1)); this.retuneMusic(); }
   private ensureMusic() {
     if (!this.ctx || this.musicOsc.length) return;
     this.musicGain=this.ctx.createGain(); this.musicGain.gain.value=this.muted?0:0.012; this.musicGain.connect(this.ctx.destination);
@@ -29,8 +28,8 @@ export class AudioDirector {
   }
   private retuneMusic() {
     if (!this.ctx || this.musicOsc.length<2) return;
-    const roots=[46,52,58,64]; const root=roots[this.stageIndex-1];
-    this.musicOsc[0].frequency.setTargetAtTime(root,this.ctx.currentTime,.35); this.musicOsc[1].frequency.setTargetAtTime(root*(this.stageIndex===4?1.5:1.333),this.ctx.currentTime,.35);
+    const roots=[46,52,58,64,49,55,44,62,41]; const root=roots[this.stageIndex-1]??58;
+    this.musicOsc[0].frequency.setTargetAtTime(root,this.ctx.currentTime,.35); this.musicOsc[1].frequency.setTargetAtTime(root*(this.stageIndex%4===0?1.5:1.333),this.ctx.currentTime,.35);
   }
   setMuted(value:boolean) { this.muted=value; if(this.ambienceGain) this.ambienceGain.gain.value=value?0:0.018; if(this.musicGain) this.musicGain.gain.value=value?0:0.012; }
   private tone(freq:number,duration:number,gain:number,type:OscillatorType='sine',offset=0) {
@@ -46,5 +45,5 @@ export class AudioDirector {
   stage(){this.tone(330,0.18,0.025,'sine');this.tone(440,0.24,0.025,'sine',0.15);}
   servo(){this.tone(380,0.08,0.025,'square');this.tone(260,0.12,0.018,'square',0.07);}
   escape(){this.tone(440,0.12,0.03,'sine');this.tone(660,0.18,0.03,'sine',0.1);this.tone(880,0.24,0.03,'sine',0.22);}
-  dispose(){this.ambience?.stop();this.musicOsc.forEach(osc=>osc.stop());this.ctx?.close();}
+  dispose(){try{this.ambience?.stop();this.musicOsc.forEach(osc=>osc.stop());}catch{/* already stopped */}this.musicOsc=[];void this.ctx?.close();this.ctx=null;}
 }
