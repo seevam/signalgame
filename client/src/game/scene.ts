@@ -1,6 +1,7 @@
 import {Engine} from '@babylonjs/core/Engines/engine';import {Scene} from '@babylonjs/core/scene';
 import {drawScene,drawTitle,type SpriteAssets} from './draw';import {drawCorridor,drawCorridorTitle} from './corridorDraw';import {drawArchives,drawArchivesTitle} from './archivesDraw';import {drawVault,drawVaultTitle} from './vaultDraw';import {drawCampaign,drawCampaignTitle} from './campaignDraw';
 import {AudioDirector} from './audio';import {CompletionBurst} from './effects';import {TOTAL_STAGES,clampStage,createWorldForStage} from './stages';
+const asset=import.meta.env.BASE_URL;
 export type GameHandle={scene:Scene;world:any;dispose:()=>void};
 export type SceneOptions={stage?:number;demo?:boolean;onStageComplete?:(stage:number)=>void;onAdvance?:(nextStage:number)=>void};
 const overlayText=(ctx:CanvasRenderingContext2D,heading:string,body:string,hint:string,accent='#d5dae8')=>{ctx.fillStyle='rgba(12,14,24,.84)';ctx.fillRect(0,0,960,540);ctx.fillStyle=accent;ctx.font='28px ui-monospace,monospace';ctx.fillText(heading,72,100);ctx.fillStyle='#d5dae8';ctx.font='15px ui-monospace,monospace';ctx.fillText(body,72,170);ctx.fillStyle='#e0af68';ctx.fillText(hint,72,222);};
@@ -9,10 +10,10 @@ export function createGameScene(visible:HTMLCanvasElement,options:SceneOptions={
  const params=new URLSearchParams(location.search);const stageNum=clampStage(options.stage??Number(params.get('stage')||1));const demo=options.demo??params.has('demo');
  const stage2=stageNum===2,stage3=stageNum===3,stage4=stageNum===4,late=stageNum>=5;const isFinalStage=stageNum>=TOTAL_STAGES;
  const world:any=createWorldForStage(stageNum);if(demo)world.start(true);if(import.meta.env.DEV)(window as any).signalWorld=world;const ctx=visible.getContext('2d')!;let last=performance.now();let paused=false,journalOpen=false;
- const sprites:SpriteAssets={finn:null,guard:null,finnWalk:[],guardWalk:[],finnJump:null,finnLand:null,finnCrouch:null,finnHide:null,guardAlert:null,props:[]};const audio=new AudioDirector();audio.setStage(stageNum);const completionFx=new CompletionBurst();let wasAlert=false,wasWin=false,wasHidden=false,wasHack=false,wasBio=false,wasOverride=false;let art={bg:null as HTMLImageElement|null,finn:null as HTMLImageElement|null,guard:null as HTMLImageElement|null};
- const load=(src:string,on:(i:HTMLImageElement)=>void)=>{const i=new Image();i.onload=()=>on(i);i.onerror=()=>console.warn(`[SIGNAL] art failed: ${src}`);i.src=src;};if(stage2){load('/generated/corridor-bg.jpg',i=>art.bg=i);}if(stage3){load('/generated/archives-bg.jpg',i=>art.bg=i);}if(stage4||late){load('/generated/vault-bg.jpg',i=>art.bg=i);}if(stage2||stage3||stage4||late){load('/generated/finn-stage3.png',i=>art.finn=i);load('/generated/guard-stage3.png',i=>art.guard=i);}
- const loadSprite=(src:string,onReady:(sprite:HTMLCanvasElement)=>void)=>{const image=new Image();image.onload=()=>{const off=document.createElement('canvas');off.width=image.width;off.height=image.height;off.getContext('2d')!.drawImage(image,0,0);onReady(off);};image.src=src;};if(!stage2&&!stage3&&!stage4&&!late){loadSprite('/generated/finn-idle.png',s=>sprites.finn=s);loadSprite('/generated/guard-idle.png',s=>sprites.guard=s);loadSprite('/generated/finn-walk-0.png',s=>sprites.finnWalk[0]=s);loadSprite('/generated/finn-walk-1.png',s=>sprites.finnWalk[1]=s);loadSprite('/generated/guard-alert.png',s=>sprites.guardAlert=s);}
- const resize=()=>{const ratio=960/540;const host=visible.parentElement;const w=Math.min(host?.clientWidth??window.innerWidth,(host?.clientHeight??window.innerHeight)*ratio);visible.style.width=`${Math.max(320,w)}px`;visible.style.height=`${Math.max(180,w/ratio)}px`;};resize();window.addEventListener('resize',resize);
+ const sprites:SpriteAssets={finn:null,guard:null,finnWalk:[],guardWalk:[],finnJump:null,finnLand:null,finnCrouch:null,finnHide:null,guardAlert:null,props:[]};const audio=new AudioDirector();audio.setStage(stageNum);const completionFx=new CompletionBurst();let wasAlert=false,wasWin=false,wasLose=false,wasHidden=false,wasHack=false;let art={bg:null as HTMLImageElement|null,finn:null as HTMLImageElement|null,guard:null as HTMLImageElement|null};
+ const load=(src:string,on:(i:HTMLImageElement)=>void)=>{const i=new Image();i.onload=()=>on(i);i.onerror=()=>console.warn(`[SIGNAL] art failed: ${src}`);i.src=src;};if(stage2){load(asset+'generated/corridor-bg.jpg',i=>art.bg=i);}if(stage3){load(asset+'generated/archives-bg.jpg',i=>art.bg=i);}if(stage4||late){load(asset+'generated/vault-bg.jpg',i=>art.bg=i);}if(stage2||stage3||stage4||late){load(asset+'generated/finn-stage3.png',i=>art.finn=i);load(asset+'generated/guard-stage3.png',i=>art.guard=i);}
+ const loadSprite=(src:string,onReady:(sprite:HTMLCanvasElement)=>void)=>{const image=new Image();image.onload=()=>{const off=document.createElement('canvas');off.width=image.width;off.height=image.height;off.getContext('2d')!.drawImage(image,0,0);onReady(off);};image.src=src;};if(!stage2&&!stage3&&!stage4&&!late){loadSprite(asset+'generated/finn-idle.png',s=>sprites.finn=s);loadSprite(asset+'generated/guard-idle.png',s=>sprites.guard=s);loadSprite(asset+'generated/finn-walk-0.png',s=>sprites.finnWalk[0]=s);loadSprite(asset+'generated/finn-walk-1.png',s=>sprites.finnWalk[1]=s);loadSprite(asset+'generated/guard-alert.png',s=>sprites.guardAlert=s);}
+ const resize=()=>{const ratio=960/540;const host=visible.parentElement;const w=Math.min(host?.clientWidth??window.innerWidth,(host?.clientHeight??window.innerHeight)*ratio);visible.style.width=`${Math.max(320,w)}px`;visible.style.height=`${Math.max(180,w/ratio)}px`;engine.resize();};resize();window.addEventListener('resize',resize);
  const releaseAllKeys=()=>{world.keys?.clear?.();};
  const restart=()=>{paused=false;journalOpen=false;releaseAllKeys();world.start(demo);audio.stage();};
  const advance=(next:number)=>{releaseAllKeys();options.onAdvance?.(clampStage(next));};
@@ -46,7 +47,9 @@ export function createGameScene(visible:HTMLCanvasElement,options:SceneOptions={
   if(!frozen){
    if(world.mode==='play'&&world.player.x!==beforeX)audio.footstep(late||stage3||stage4?'carpet':world.player.y<350?'desk':world.player.x>700?'carpet':'tile',world.player.running);
    if((world.evidenceCount?.()??world.evidence??0)>beforeEvidence)audio.pickup();
-   if(world.guard?.state==='alert'&&!wasAlert)audio.alert();
+   const alertNow=world.guard?.state==='alert'||!!world.guards?.some((g:any)=>g.state==='alert');
+   if(alertNow&&!wasAlert)audio.alert();
+   if(world.mode==='play')audio.heartbeat(world.suspicion??0);
    if(stage3&&world.hacked&&!wasHack)audio.stage();
    if(stage4&&world.cameraHacked&&!wasHack)audio.stage();
    if(stage4&&world.biometric&&!beforeBio)audio.servo();
@@ -54,9 +57,10 @@ export function createGameScene(visible:HTMLCanvasElement,options:SceneOptions={
    if(stage4&&world.escapeActive&&!beforeEscape)audio.stage();
    if(late&&world.uploading&&!beforeUpload)audio.stage();
    if(world.player.hidden&&!wasHidden)audio.servo();
-   wasHidden=world.player.hidden;wasAlert=world.guard?.state==='alert';wasHack=world.hacked||world.cameraHacked;wasBio=world.biometric;wasOverride=world.doorOverridden;
+   wasHidden=world.player.hidden;wasAlert=alertNow;wasHack=world.hacked||world.cameraHacked;
   }
   if(world.mode==='win'&&!wasWin){audio.escape();completionFx.trigger();wasWin=true;paused=false;journalOpen=false;options.onStageComplete?.(stageNum);}
+  if(world.mode==='lose'&&!wasLose){audio.flatline();wasLose=true;paused=false;journalOpen=false;}if(world.mode!=='lose')wasLose=false;
   completionFx.update(dt);if(world.mode!=='win')wasWin=false;
   if(world.mode==='title')late?drawCampaignTitle(ctx,world):stage4?drawVaultTitle(ctx):stage3?drawArchivesTitle(ctx,world):stage2?drawCorridorTitle(ctx,world):drawTitle(ctx,world);
   else{
@@ -68,6 +72,5 @@ export function createGameScene(visible:HTMLCanvasElement,options:SceneOptions={
   }
   completionFx.draw(ctx);
  });
- window.addEventListener('resize',()=>engine.resize());
  return{scene,world,dispose:()=>{engine.stopRenderLoop();window.removeEventListener('resize',resize);window.removeEventListener('keydown',down);window.removeEventListener('keyup',up);window.removeEventListener('blur',blur);audio.dispose();scene.dispose();engine.dispose();engineCanvas.remove();}};
 }

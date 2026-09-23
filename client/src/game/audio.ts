@@ -6,6 +6,7 @@ export class AudioDirector {
   private musicGain: GainNode | null = null;
   private stageIndex = 1;
   private lastStep = 0;
+  private lastBeat = 0;
   private muted = false;
   unlock() {
     if (!this.ctx) this.ctx = new AudioContext();
@@ -45,5 +46,8 @@ export class AudioDirector {
   stage(){this.tone(330,0.18,0.025,'sine');this.tone(440,0.24,0.025,'sine',0.15);}
   servo(){this.tone(380,0.08,0.025,'square');this.tone(260,0.12,0.018,'square',0.07);}
   escape(){this.tone(440,0.12,0.03,'sine');this.tone(660,0.18,0.03,'sine',0.1);this.tone(880,0.24,0.03,'sine',0.22);}
+  // Heartbeat quickens with suspicion: silent below 25%, ~55 bpm at 25%, ~170 bpm at 100%.
+  heartbeat(suspicion:number){if(suspicion<25)return;const now=performance.now();const interval=1100-(Math.min(100,suspicion)-25)/75*750;if(now-this.lastBeat<interval)return;this.lastBeat=now;const g=0.02+suspicion/100*0.03;this.tone(62,0.11,g,'sine');this.tone(52,0.13,g*.8,'sine',0.14);}
+  flatline(){this.tone(988,1.4,0.03,'sine');this.tone(110,0.6,0.04,'sawtooth');}
   dispose(){try{this.ambience?.stop();this.musicOsc.forEach(osc=>osc.stop());}catch{/* already stopped */}this.musicOsc=[];void this.ctx?.close();this.ctx=null;}
 }

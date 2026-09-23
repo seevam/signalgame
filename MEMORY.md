@@ -31,3 +31,14 @@
 - Character art uses a shared `floorY=410` baseline. Stage 1–4 renderers anchor sprite feet to that line and apply jump offsets separately; this fixed the screenshot bug where Stage 2 characters appeared to walk above the platform.
 - `VaultWorld.escapeActive` begins once the token/evidence, biometric scan, and remote override are complete and Finn reaches the open blast door; the final win requires running to x>1570. `vaultDraw.ts` overlays a red `FINAL ESCAPE` cue.
 - `CampaignWorld` and `campaignDraw.ts` provide first-pass Stages 5–9. Stage 5 uses `X` to disable lasers; Stage 6 uses three lab stations and a key gate; Stage 7 uses `L` for lights and `R` for rescue; Stage 8 uses `U` and a 60-second stationary upload; Stage 9 collects the signed document then uses a timed roof run.
+
+## Gameplay fix pass (September 2026)
+
+- Stage 1 guard follows the spec: pauses 1.5s at each lane end before turning, and stops while ALERT until 2.2s after losing sight. Suspicion and the alert timer decay whenever nobody sees Finn — previously they froze inside camera-safe zones and during the jammer.
+- Stage 2 now has what was drawn but not built: ceiling-camera detection over the middle zone, two solid 40px barriers you must jump (you can stand on them), and five named hide spots from the spec replacing a 470px "blind spot" strip.
+- Jump velocity is shared and gives the spec's 53px apex (was 43px, which could not clear a 40px barrier).
+- Stage 4 lasers were inverted — harmless before the camera hack, harmful after. The grid is now solid until hacked, then cycles with visible gaps. The laser beams painted into `vault-bg.jpg` are patched out at draw time (`PAINTED_BEAMS` in `vaultDraw.ts`) because the plate is screen-fixed and could never show the grid's real state.
+- Stages 5–9: the E condition required `!hidden`, so hiding was permanent — fixed. Stage 7 lights now extend guard sight as the objective text says.
+- Audio: heartbeat that quickens with suspicion, flatline on loss, and the alert sting now fires in every stage (it only checked a single `guard`).
+- The build uses `base: "./"` and runtime art paths resolve against `import.meta.env.BASE_URL`, so it runs from a subfolder (itch.io). The unconfigured analytics tag that 404'd on every load is gone.
+

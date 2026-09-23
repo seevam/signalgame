@@ -214,6 +214,8 @@ export default defineConfig({
       "@assets": path.resolve(import.meta.dirname, "attached_assets"),
     },
   },
+  // Relative asset URLs, so the build runs from any folder (itch.io serves games from a subpath).
+  base: "./",
   envDir: path.resolve(import.meta.dirname),
   root: path.resolve(import.meta.dirname, "client"),
   build: {
