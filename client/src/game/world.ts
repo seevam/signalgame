@@ -1,4 +1,4 @@
-import {GRAVITY,JUMP_VELOCITY} from './physics';
+import {GRAVITY,JUMP_BUFFER,JUMP_VELOCITY,isJumpKey} from './physics';
 export type GameMode = 'title' | 'play' | 'win' | 'lose';
 export type PickupKind = 'evidence' | 'key';
 export type Pickup = { x:number; y:number; kind:PickupKind; id:number; label:string; taken:boolean };
@@ -16,10 +16,10 @@ export class GameWorld {
     {x: 590, y: 390, kind:'evidence', id:2, label:'INTAKE FORM — Consent line signed by staff, not by her.', taken:false},
     {x: 765, y: 390, kind:'key', id:3, label:'STAFF KEYCARD — Ward access. The magnetic strip is still warm.', taken:false},
   ];
-  keys = new Set<string>(); demo = false;
+  keys = new Set<string>(); demo = false; jumpBuffer = 0;
 
   start(demo = false) { this.demo = demo; this.mode = 'play'; this.reset(); }
-  reset() { this.time=0; this.lastX=110; this.player = {x:110,y:366,vy:0,facing:1,hidden:false,crouching:false,crouchTimer:0,landingTimer:0,running:false,moving:false}; this.guard={x:650,y:365,dir:-1,state:'patrol',alertTimer:0,investigateTimer:0,pauseTimer:0}; this.suspicion=0; this.interference=0; this.jammerUsed=false; this.note='Find the keycard and reach the east wing.'; this.pickups.forEach(p=>p.taken=false); }
+  reset() { this.jumpBuffer=0; this.time=0; this.lastX=110; this.player = {x:110,y:366,vy:0,facing:1,hidden:false,crouching:false,crouchTimer:0,landingTimer:0,running:false,moving:false}; this.guard={x:650,y:365,dir:-1,state:'patrol',alertTimer:0,investigateTimer:0,pauseTimer:0}; this.suspicion=0; this.interference=0; this.jammerUsed=false; this.note='Find the keycard and reach the east wing.'; this.pickups.forEach(p=>p.taken=false); }
   evidenceCount() { return this.pickups.filter(p=>p.kind==='evidence' && p.taken).length; }
   hasKey() { return this.pickups.some(p=>p.kind==='key' && p.taken); }
   cameraSafeZoneName() { if(this.player.x<210) return 'RECEPTION DESK'; if(this.player.x>=476 && this.player.x<=550) return 'CART SHADOW'; if(this.player.x>=800 && this.player.x<=875) return 'LOCKER POCKET'; return null; }
@@ -27,13 +27,13 @@ export class GameWorld {
   cameraSweep() { return Math.sin(this.time*2*Math.PI/6.2)*0.72; }
   cameraBeam() { const a=this.cameraSweep(); return { left: 690+Math.sin(a-.18)*250, right: 690+Math.sin(a+.18)*250 }; }
   cameraSeesPlayer() { const beam=this.cameraBeam(); return !this.player.hidden && !this.cameraSafeZoneName() && !this.player.crouching && this.player.x+10>=beam.left && this.player.x-10<=beam.right && this.player.y>300; }
-  press(key:string) { if (key.toLowerCase()==='m') { this.muted=!this.muted; return; } if (this.mode!=='play') return; this.keys.add(key.toLowerCase()); if (key.toLowerCase()==='e' && this.mode==='play') { const spot = this.nearHide(); if (spot && !this.player.hidden && !this.player.crouching) { this.player.crouching=true; this.player.crouchTimer=.22; } else if (spot && this.player.hidden) { this.player.hidden=false; this.player.crouching=false; } } }
+  press(key:string) { if (key.toLowerCase()==='m') { this.muted=!this.muted; return; } if (this.mode!=='play') return; this.keys.add(key.toLowerCase()); if (isJumpKey(key.toLowerCase())) this.jumpBuffer=JUMP_BUFFER; if (key.toLowerCase()==='e' && this.mode==='play') { const spot = this.nearHide(); if (spot && !this.player.hidden && !this.player.crouching) { this.player.crouching=true; this.player.crouchTimer=.22; } else if (spot && this.player.hidden) { this.player.hidden=false; this.player.crouching=false; } } }
   release(key:string) { this.keys.delete(key.toLowerCase()); }
   nearHide() { return (this.player.x < 185 || Math.abs(this.player.x-370)<42 || this.player.x>835) ? true : false; }
   nearJammer() { return Math.abs(this.player.x-704)<42 && !this.player.hidden && !this.player.crouching; }
   step(dt:number) {
     if (this.mode!=='play') return;
-    this.time += dt;
+    this.time += dt; this.jumpBuffer=Math.max(0,this.jumpBuffer-dt);
     this.interference=Math.max(0,this.interference-dt);
     if (this.demo) this.runDemo();
     const left=this.keys.has('a')||this.keys.has('arrowleft'); const right=this.keys.has('d')||this.keys.has('arrowright');
@@ -42,7 +42,7 @@ export class GameWorld {
     if(this.player.landingTimer>0)this.player.landingTimer=Math.max(0,this.player.landingTimer-dt);
     if (!this.player.hidden && !this.player.crouching) {
       const speed=run?190:112; const axis=(right?1:0)-(left?1:0); this.player.x += axis*speed*dt; if(axis) this.player.facing=axis;
-      if ((this.keys.has(' ')||this.keys.has('w')||this.keys.has('arrowup')) && this.player.y>=this.floorY-this.playerHalfHeight) this.player.vy=JUMP_VELOCITY;
+      if ((this.keys.has(' ')||this.keys.has('w')||this.keys.has('arrowup')||this.jumpBuffer>0) && this.player.y>=this.floorY-this.playerHalfHeight) { this.player.vy=JUMP_VELOCITY; this.jumpBuffer=0; }
       this.player.vy += GRAVITY*dt; this.player.y += this.player.vy*dt; if(this.player.y>this.floorY-this.playerHalfHeight){if(this.player.vy>0)this.player.landingTimer=.16;this.player.y=this.floorY-this.playerHalfHeight;this.player.vy=0;}
     }
     this.player.x=Math.max(36,Math.min(916,this.player.x));

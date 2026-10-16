@@ -94,5 +94,13 @@ for(const [name,w] of [['corridor',new CorridorWorld()],['archives',new Archives
   check(`${name}: restart resets the camera`,(w as any).cameraX===0);}
 });
 
+// Jump keys were only sampled once per frame, so a tap that pressed and released between two frames was lost.
+scenario('Jump',()=>{
+for(const [name,w] of [['stage 1',new GameWorld()],['corridor',new CorridorWorld()],['archives',new ArchivesWorld()],['vault',new VaultWorld()],['campaign',new CampaignWorld(5)]] as const){
+  const world=w as any;world.start();world.player.x=120;world.press(' ');world.release(' ');const y0=world.player.y;
+  for(let i=0;i<10;i++)world.step(DT);
+  check(`${name}: a jump tap between frames still jumps`,world.player.y<y0-20,`rose ${(y0-world.player.y).toFixed(0)}px`);}
+});
+
 if(failures){console.error(`\n${failures} regression check(s) failed`);process.exit(1);}
 console.log('\nall regression checks passed');

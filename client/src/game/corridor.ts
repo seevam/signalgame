@@ -1,4 +1,4 @@
-import {GRAVITY,JUMP_VELOCITY} from './physics';
+import {GRAVITY,JUMP_BUFFER,JUMP_VELOCITY,isJumpKey} from './physics';
 export type CorridorMode='title'|'play'|'win'|'lose';
 export type CorridorPickup={x:number;kind:'evidence'|'key';label:string;taken:boolean};
 export type HideSpot={x:number;w:number;label:string};
@@ -26,9 +26,9 @@ export class CorridorWorld {
     {x:1450,kind:'evidence',label:'DOSAGE SHEET — The compound is not on any formulary.',taken:false},
     {x:1780,kind:'key',label:'WARD KEY — The tag is stamped EAST WING.',taken:false},
   ];
-  keys=new Set<string>();
+  keys=new Set<string>();jumpBuffer=0;
   start(demo=false){this.demo=demo;this.mode='play';this.reset();}
-  reset(){this.mode='play';this.time=0;this.cameraX=0;this.player={x:90,y:366,vy:0,facing:1,hidden:false,crouching:false,crouchTimer:0,landingTimer:0,running:false};this.guards=[{x:360,dir:1,state:'patrol'},{x:1600,dir:-1,state:'patrol'}];this.suspicion=0;this.stealth=100;this.note='Reach the east wing through the corridor.';this.pickups.forEach(p=>p.taken=false);}
+  reset(){this.jumpBuffer=0;this.mode='play';this.time=0;this.cameraX=0;this.player={x:90,y:366,vy:0,facing:1,hidden:false,crouching:false,crouchTimer:0,landingTimer:0,running:false};this.guards=[{x:360,dir:1,state:'patrol'},{x:1600,dir:-1,state:'patrol'}];this.suspicion=0;this.stealth=100;this.note='Reach the east wing through the corridor.';this.pickups.forEach(p=>p.taken=false);}
   evidenceCount(){return this.pickups.filter(p=>p.kind==='evidence'&&p.taken).length;}
   hasKey(){return this.pickups.some(p=>p.kind==='key'&&p.taken);}
   nearHide(){return this.hideSpots.find(s=>this.player.x>=s.x&&this.player.x<=s.x+s.w)??null;}
@@ -38,11 +38,11 @@ export class CorridorWorld {
   // Floor height under a point, accounting for barrier tops the player can stand on.
   private surfaceAt(x:number){let top=this.floorY;for(const b of this.barriers)if(x+6>b.x&&x-6<b.x+b.w)top=Math.min(top,b.top);return top;}
   private grounded(){return this.player.y+this.playerHalfHeight>=this.surfaceAt(this.player.x)-0.5&&this.player.vy>=0;}
-  press(key:string){const k=key.toLowerCase();if(k==='m'){this.muted=!this.muted;return;}if(this.mode!=='play')return;this.keys.add(k);if(k==='e'&&this.grounded()&&(this.player.hidden||this.nearHide()))this.player.hidden=!this.player.hidden;}
+  press(key:string){const k=key.toLowerCase();if(k==='m'){this.muted=!this.muted;return;}if(this.mode!=='play')return;this.keys.add(k);if(isJumpKey(k))this.jumpBuffer=JUMP_BUFFER;if(k==='e'&&this.grounded()&&(this.player.hidden||this.nearHide()))this.player.hidden=!this.player.hidden;}
   release(key:string){this.keys.delete(key.toLowerCase());}
   step(dt:number){
     if(this.mode!=='play')return;
-    this.time+=dt;
+    this.time+=dt;this.jumpBuffer=Math.max(0,this.jumpBuffer-dt);
     if(this.demo)this.runDemo();
     const left=this.keys.has('a')||this.keys.has('arrowleft');const right=this.keys.has('d')||this.keys.has('arrowright');const run=this.keys.has('shift');this.player.running=run;
     if(!this.player.hidden){
@@ -52,7 +52,7 @@ export class CorridorWorld {
       const feet=this.player.y+this.playerHalfHeight;
       for(const b of this.barriers){if(feet>b.top+1&&nx+6>b.x&&nx-6<b.x+b.w){nx=this.player.x<=b.x?b.x-6:b.x+b.w+6;}}
       this.player.x=Math.max(35,Math.min(1930,nx));
-      if((this.keys.has(' ')||this.keys.has('w')||this.keys.has('arrowup'))&&this.grounded())this.player.vy=JUMP_VELOCITY;
+      if((this.keys.has(' ')||this.keys.has('w')||this.keys.has('arrowup')||this.jumpBuffer>0)&&this.grounded()){this.player.vy=JUMP_VELOCITY;this.jumpBuffer=0;}
       this.player.vy+=GRAVITY*dt;this.player.y+=this.player.vy*dt;
       const surface=this.surfaceAt(this.player.x);
       if(this.player.y+this.playerHalfHeight>=surface&&this.player.vy>=0){this.player.y=surface-this.playerHalfHeight;this.player.vy=0;}
