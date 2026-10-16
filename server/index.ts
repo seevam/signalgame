@@ -1,4 +1,5 @@
 import express from "express";
+import fs from "fs";
 import { createServer } from "http";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -16,6 +17,11 @@ async function startServer() {
       ? path.resolve(__dirname, "public")
       : path.resolve(__dirname, "..", "dist", "public");
 
+  const indexHtml = path.join(staticPath, "index.html");
+  if (!fs.existsSync(indexHtml)) {
+    console.warn(`Warning: ${indexHtml} not found. Run "pnpm build" before starting the server.`);
+  }
+
   app.use(express.static(staticPath));
 
   // The game is a single page at "/" whose asset URLs are relative (so the same build also runs from a
@@ -25,6 +31,12 @@ async function startServer() {
   app.get("*", (req, res) => {
     if (path.extname(req.path)) {
       res.status(404).end();
+      return;
+    }
+    // express.static already serves "/" when the build exists, so reaching here at "/" means it doesn't.
+    // Redirecting "/" to itself would loop forever.
+    if (req.path === "/") {
+      res.status(404).type("text/plain").send(`Game files not found in ${staticPath}. Run "pnpm build" first.`);
       return;
     }
     const queryStart = req.originalUrl.indexOf("?");
