@@ -20,7 +20,8 @@ for(const stage of [5,6,7,9]){const c=new CampaignWorld(stage);c.start();c.playe
 
 // Stage 1: camera detection used a wider, differently-phased beam than the one drawn on screen.
 scenario('Stage 1',()=>{
-{const g=new GameWorld();g.start();let outside=0;for(let t=0;t<6.2;t+=0.02){g.time=t;const b=g.cameraBeam();for(let x=250;x<=780;x+=4){g.player.x=x;if(g.cameraSeesPlayer()&&(x<b.left-10||x>b.right+10))outside++;}}
+{const g=new GameWorld();g.start();let outside=0,inside=0;for(let t=0;t<6.2;t+=0.02){g.time=t;const beams=g.cameraBeams();for(let x=40;x<=g.width-20;x+=4){g.player.x=x;if(!g.cameraSeesPlayer())continue;inside++;if(!beams.some(b=>x>=b.left-10&&x<=b.right+10))outside++;}}
+  check('stage 1: the cameras actually detect (scan is not vacuous)',inside>100,`${inside} detections`);
   check('stage 1: camera only detects inside the drawn beam (±body width)',outside===0,`${outside} detections outside`);}
 });
 

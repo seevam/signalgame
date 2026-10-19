@@ -6,7 +6,9 @@ import {VaultWorld} from './client/src/game/vault';
 const DT=.016;
 const fail=(m:string)=>{throw new Error(m);};
 
-const stage1=new GameWorld();stage1.start();stage1.pickups.forEach(p=>p.taken=true);stage1.player.x=900;stage1.step(DT);
+const stage1=new GameWorld();stage1.start();stage1.pickups.forEach(p=>p.taken=true);stage1.player.x=1000;stage1.step(DT);
+if(stage1.mode==='win')fail('Stage 1 let Finn out before the east wing door');
+stage1.player.x=2470;stage1.step(DT);
 if(stage1.mode!=='win')fail('Stage 1 completion failed');
 
 const stage2=new CorridorWorld();stage2.start();stage2.pickups.forEach(p=>p.taken=true);stage2.player.x=1930;stage2.step(DT);
