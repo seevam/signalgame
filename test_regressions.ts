@@ -102,5 +102,14 @@ for(const [name,w] of [['stage 1',new GameWorld()],['corridor',new CorridorWorld
   check(`${name}: a jump tap between frames still jumps`,world.player.y<y0-20,`rose ${(y0-world.player.y).toFixed(0)}px`);}
 });
 
+// Stage 1 counted every grounded frame as a landing (gravity dips Finn below the floor and the clamp
+// snaps him back), so the landing timer and its floor shadow never switched off.
+scenario('Stage 1 landing',()=>{
+  const g=new GameWorld();g.start();g.player.x=150;run(g,1);
+  check('stage 1: standing still is not a landing',g.player.landingTimer===0,`landingTimer ${g.player.landingTimer}`);
+  g.press(' ');let landed=false;for(let i=0;i<90;i++){g.step(DT);if(g.player.landingTimer>0)landed=true;}
+  check('stage 1: a real jump still lands',landed);
+});
+
 if(failures){console.error(`\n${failures} regression check(s) failed`);process.exit(1);}
 console.log('\nall regression checks passed');

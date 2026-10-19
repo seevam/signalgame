@@ -1,15 +1,9 @@
 import type {GameWorld} from './world';
+import {drawWalker,RIGS,FINN_HEIGHT,GUARD_HEIGHT} from './drawUtil';
 export type SpriteAssets = { finn: HTMLCanvasElement | null; guard: HTMLCanvasElement | null; finnWalk: HTMLCanvasElement[]; guardWalk: HTMLCanvasElement[]; finnJump: HTMLCanvasElement|null; finnLand: HTMLCanvasElement|null; finnCrouch: HTMLCanvasElement|null; finnHide: HTMLCanvasElement|null; guardAlert: HTMLCanvasElement|null; props: (HTMLCanvasElement|null)[] };
 const C={void:'#12141d',floor:'#2d3250',wall:'#414868',prop:'#565f89',finn:'#bb9af7',alarm:'#f7768e',safe:'#9ece6a',gold:'#e0af68',glass:'#7aa2f7',paper:'#d5dae8'};
 function rect(c:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,fill:string){c.fillStyle=fill;c.fillRect(x,y,w,h)}
 function txt(c:CanvasRenderingContext2D,s:string,x:number,y:number,size=14,fill=C.paper){c.fillStyle=fill;c.font=`${size}px ui-monospace,monospace`;c.fillText(s,x,y)}
-function drawSprite(c:CanvasRenderingContext2D,sprite:HTMLCanvasElement|null,x:number,y:number,w:number,h:number,flip=false){
-  if(!sprite) return false;
-  c.save();
-  if(flip){c.translate(x+w,y);c.scale(-1,1);c.drawImage(sprite,0,0,w,h);}else c.drawImage(sprite,x,y,w,h);
-  c.restore();
-  return true;
-}
 export function drawScene(c:CanvasRenderingContext2D,w:GameWorld,sprites:SpriteAssets={finn:null,guard:null,finnWalk:[],guardWalk:[],finnJump:null,finnLand:null,finnCrouch:null,finnHide:null,guardAlert:null,props:[]} ){
   const {width:W,height:H}=w; c.imageSmoothingEnabled=false; rect(c,0,0,W,H,C.void);
   rect(c,0,110,W,300,C.wall); rect(c,0,410,W,130,C.floor);
@@ -42,10 +36,17 @@ export function drawScene(c:CanvasRenderingContext2D,w:GameWorld,sprites:SpriteA
   // guard cone
   const gx=w.guard.x, dir=w.guard.dir; c.save();c.globalAlpha=w.guard.state==='alert'?.32:.18;c.fillStyle=C.alarm;c.beginPath();c.moveTo(gx,355);c.lineTo(gx+dir*250,290);c.lineTo(gx+dir*250,415);c.closePath();c.fill();c.restore();
   // Generated guard sprite replaces the placeholder body; the alert label remains readable.
-  const guardFrame=w.guard.state==='alert'?(sprites.guardAlert||sprites.guardWalk[0]):(w.guard.pauseTimer<=0&&sprites.guardWalk.length?(Math.floor(w.time*8)%2===1?sprites.guardWalk[1]:sprites.guardWalk[0]):sprites.guard); const guardDrawn=drawSprite(c,guardFrame||sprites.guard,gx-24,w.floorY-94,48,94,w.guard.dir<0); if(!guardDrawn){rect(c,gx-9,336,18,30,'#20283c');rect(c,gx-12,326,24,15,'#293652');rect(c,gx-8,318,16,12,'#b3a08d');rect(c,gx-14,364,7,28,'#20283c');rect(c,gx+7,364,7,28,'#20283c');rect(c,gx-18,390,12,5,C.alarm);rect(c,gx+8,390,12,5,C.alarm);}if(w.guard.state==='alert'){c.save();c.globalAlpha=.24;c.fillStyle=C.alarm;c.fillRect(gx-30,300,60,100);c.restore();}txt(c,w.guard.state==='alert'?'!':w.guard.state==='investigate'?'?':'SEC',gx-13,296,10,w.guard.state==='alert'?C.alarm:w.guard.state==='investigate'?C.gold:C.paper);
+  // Alert uses its own wide-stance pose; otherwise the idle sprite walks the lane.
+  const guardAlert=w.guard.state==='alert'&&sprites.guardAlert;const guardDrawn=guardAlert?drawWalker(c,sprites.guardAlert,RIGS.guardAlert,{key:w.guard,worldX:gx,screenX:gx,feetY:w.floorY,height:GUARD_HEIGHT,facing:w.guard.dir,still:true}):drawWalker(c,sprites.guard,RIGS.guardIdle,{key:w.guard,worldX:gx,screenX:gx,feetY:w.floorY,height:GUARD_HEIGHT,facing:w.guard.dir}); if(!guardDrawn){rect(c,gx-9,336,18,30,'#20283c');rect(c,gx-12,326,24,15,'#293652');rect(c,gx-8,318,16,12,'#b3a08d');rect(c,gx-14,364,7,28,'#20283c');rect(c,gx+7,364,7,28,'#20283c');rect(c,gx-18,390,12,5,C.alarm);rect(c,gx+8,390,12,5,C.alarm);}if(w.guard.state==='alert'){c.save();c.globalAlpha=.24;c.fillStyle=C.alarm;c.fillRect(gx-30,300,60,100);c.restore();}txt(c,w.guard.state==='alert'?'!':w.guard.state==='investigate'?'?':'SEC',gx-13,296,10,w.guard.state==='alert'?C.alarm:w.guard.state==='investigate'?C.gold:C.paper);
   // player
-  if(!w.player.hidden){const px=w.player.x;const jumping=w.player.y<366;const playerFrame=jumping?(sprites.finnJump||sprites.finn):w.player.landingTimer>0?(sprites.finnLand||sprites.finn):w.player.crouching?(sprites.finnCrouch||sprites.finn): (w.player.moving&&sprites.finnWalk.length?(Math.floor(w.time*9)%2===1?sprites.finnWalk[1]:sprites.finnWalk[0]):sprites.finn);const playerH=w.player.crouching?72:94;const playerDrawn=drawSprite(c,playerFrame||sprites.finn,px-25,w.floorY-playerH-(366-w.player.y),50,playerH,w.player.facing<0);if(jumping||w.player.landingTimer>0){c.save();c.globalAlpha=.24;c.fillStyle=C.finn;c.fillRect(px-22,w.floorY-3,44,3);c.restore();}if(!playerDrawn){rect(c,px-9,w.player.y-28,18,28,'#252b40');rect(c,px-11,w.player.y-40,22,16,C.finn);rect(c,px-8,w.player.y-49,16,12,'#bca9a0');rect(c,px-13,w.player.y-1,9,5,C.finn);rect(c,px+4,w.player.y-1,9,5,C.finn);}}
-  else {const hiddenFrame=sprites.finnHide||sprites.finnWalk[0]||sprites.finn;c.save();c.globalAlpha=.9;drawSprite(c,hiddenFrame,w.player.x-25,w.floorY-72,50,72,w.player.facing<0);c.restore();txt(c,'HIDDEN',w.player.x-24,w.player.y-24,9,C.safe);}
+  {const px=w.player.x;const airborne=w.player.vy!==0;const walking=w.player.moving||airborne;
+   // the stride pose walks; the standing pose idles, crouches and hides
+   const img=walking&&sprites.finnWalk[0]?sprites.finnWalk[0]:sprites.finn;const rig=img===sprites.finnWalk[0]?RIGS.finnWalk:RIGS.finnIdle;
+   const crouch=w.player.hidden?1:w.player.crouching?1-w.player.crouchTimer/.22:0;
+   const drawn=drawWalker(c,img,rig,{key:w.player,worldX:px,screenX:px,feetY:w.player.y+w.playerHalfHeight,height:FINN_HEIGHT,facing:w.player.facing,airborne,crouch,alpha:w.player.hidden?.9:1});
+   if(airborne||w.player.landingTimer>0){c.save();c.globalAlpha=.24;c.fillStyle=C.finn;c.fillRect(px-22,w.floorY-3,44,3);c.restore();}
+   if(!drawn){rect(c,px-9,w.player.y-28,18,28,'#252b40');rect(c,px-11,w.player.y-40,22,16,C.finn);rect(c,px-8,w.player.y-49,16,12,'#bca9a0');rect(c,px-13,w.player.y-1,9,5,C.finn);rect(c,px+4,w.player.y-1,9,5,C.finn);}
+   if(w.player.hidden)txt(c,'HIDDEN',px-24,w.player.y-24,9,C.safe);}
   // pickups
   for(const p of w.pickups) if(!p.taken){const prop=sprites.props[p.kind==='key'?3:2];if(prop)c.drawImage(prop,p.x-12,p.y-15,24,30);else {rect(c,p.x-9,p.y-7,18,14,p.kind==='key'?C.gold:C.paper);rect(c,p.x-5,p.y-4,10,2,p.kind==='key'?'#72522b':'#7aa2f7');rect(c,p.x-5,p.y,p.kind==='key'?4:10,2,p.kind==='key'?'#72522b':'#a4b4d9');}}
   // vignette + scanline

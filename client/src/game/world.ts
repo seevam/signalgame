@@ -43,7 +43,7 @@ export class GameWorld {
     if (!this.player.hidden && !this.player.crouching) {
       const speed=run?190:112; const axis=(right?1:0)-(left?1:0); this.player.x += axis*speed*dt; if(axis) this.player.facing=axis;
       if ((this.keys.has(' ')||this.keys.has('w')||this.keys.has('arrowup')||this.jumpBuffer>0) && this.player.y>=this.floorY-this.playerHalfHeight) { this.player.vy=JUMP_VELOCITY; this.jumpBuffer=0; }
-      this.player.vy += GRAVITY*dt; this.player.y += this.player.vy*dt; if(this.player.y>this.floorY-this.playerHalfHeight){if(this.player.vy>0)this.player.landingTimer=.16;this.player.y=this.floorY-this.playerHalfHeight;this.player.vy=0;}
+      const wasAirborne=this.player.y<this.floorY-this.playerHalfHeight-.5; this.player.vy += GRAVITY*dt; this.player.y += this.player.vy*dt; if(this.player.y>this.floorY-this.playerHalfHeight){if(wasAirborne&&this.player.vy>0)this.player.landingTimer=.16;this.player.y=this.floorY-this.playerHalfHeight;this.player.vy=0;}
     }
     this.player.x=Math.max(36,Math.min(916,this.player.x));
     if(this.interference>0 && this.guard.state!=='alert') { this.guard.state='investigate'; this.guard.investigateTimer=this.interference; }

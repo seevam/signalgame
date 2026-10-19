@@ -4,7 +4,7 @@
 - `client/src/pages/Home.tsx` hosts the full-screen game shell and HUD.
 - `client/src/game/stages.ts` owns campaign progression: stage count, per-stage metadata, the stage→world factory, and the unlocked-stage value persisted in `localStorage`.
 - `client/src/game/physics.ts` holds the shared movement constants (gravity, and a jump velocity derived from the spec's 53px apex) so every stage jumps the same height.
-- `client/src/game/drawUtil.ts` holds `drawFacing`, which draws a character mirrored to its direction of travel with its feet on a given line.
+- `client/src/game/drawUtil.ts` draws every character through `drawWalker`, a procedural walk cycle for single-frame sprites: it splits the sprite at the hip, bobs the body, and narrows the legs toward the feet in strips (apart at each footfall, together as they pass). The cycle advances with distance moved, so feet don't skate, and speed picks walk or run. `RIGS` holds each sprite's measured top, hip, sole row, body centre and native facing; `guard-stage3.png` and `guard-alert.png` face left, everything else faces right. Sprites keep their real proportions and their soles sit on the floor line. Adding a sprite means measuring it into `RIGS`.
 - `client/src/game/scene.ts` owns the Babylon Engine lifecycle, runtime sprite loading, animation frame selection, and a lightweight 2D canvas renderer driven by the Babylon render loop.
 - `client/src/game/world.ts` contains the current Stage 1 simulation: movement, patrol AI, vision, hiding, collision, pickup collection, gating, jammer interaction, and win/lose transitions.
 - Future stages should move stage-specific data into plain TypeScript stage definitions and keep shared rules in reusable managers rather than coupling new stages to React.
