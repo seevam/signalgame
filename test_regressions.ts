@@ -45,8 +45,9 @@ scenario('Stage 2',()=>{
 
 // Stage 2: the ceiling camera was drawn but had no detection logic at all.
 scenario('Stage 2',()=>{
-{const k=new CorridorWorld();k.start();k.guards.forEach(g=>{g.x=g.x<1000?170:1830;g.dir=g.x<1000?-1:1;});k.player.x=1100;run(k,7);
-  check('stage 2: standing under the camera builds suspicion',k.suspicion>30,`suspicion ${k.suspicion.toFixed(1)}`);
+{const k=new CorridorWorld();k.start();k.guards=[];k.player.x=1000;let rose=false,fell=false;
+  for(let i=0;i<60*7;i++){const before=k.suspicion;k.step(DT);if(k.cameraSeesPlayer()&&k.suspicion>before)rose=true;if(!k.cameraSeesPlayer()&&k.suspicion<before)fell=true;}
+  check('stage 2: the camera raises suspicion while its beam is on Finn, and it decays after',rose&&fell);
   const h=new CorridorWorld();h.start();h.guards.forEach(g=>{g.x=g.x<1000?170:1830;g.dir=g.x<1000?-1:1;});h.player.x=990;h.press('e');run(h,7);
   check('stage 2: hiding in the linen cart beats the camera',h.player.hidden&&h.suspicion===0);}
 });
@@ -83,8 +84,8 @@ scenario('Stage 4',()=>{
 
 // Stage 7: "LIGHTS ON — the torches can see you now" changed nothing.
 scenario('Stage 7',()=>{
-{const dark=new CampaignWorld(7);dark.start();dark.guard.x=1300;dark.guard.dir=-1;dark.player.x=1110;run(dark,0.5);
-  const lit=new CampaignWorld(7);lit.start();lit.switchOn=true;lit.guard.x=1300;lit.guard.dir=-1;lit.player.x=1110;run(lit,0.5);
+{const dark=new CampaignWorld(7);dark.start();dark.lightsOn=false;dark.guard.x=1300;dark.guard.dir=-1;dark.player.x=1110;run(dark,0.5);
+  const lit=new CampaignWorld(7);lit.start();lit.lightsOn=true;lit.guard.x=1300;lit.guard.dir=-1;lit.player.x=1110;run(lit,0.5);
   check('stage 7: turning the lights on lets the guard see further',dark.suspicion===0&&lit.suspicion>0);}
 });
 

@@ -1,5 +1,5 @@
 import type {CorridorWorld} from './corridor';
-import {drawWalker,RIGS,FINN_HEIGHT,GUARD_HEIGHT} from './drawUtil';
+import {drawAwareness,drawWalker,RIGS,FINN_HEIGHT,GUARD_HEIGHT} from './drawUtil';
 const C={void:'#12141d',floor:'#2d3250',prop:'#565f89',alarm:'#f7768e',safe:'#9ece6a',gold:'#e0af68',glass:'#7aa2f7',paper:'#d5dae8',finn:'#bb9af7'};
 function rect(c:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,f:string){c.fillStyle=f;c.fillRect(x,y,w,h)}function txt(c:CanvasRenderingContext2D,s:string,x:number,y:number,n=12,f=C.paper){c.fillStyle=f;c.font=`${n}px ui-monospace,monospace`;c.fillText(s,x,y)}
 export function drawCorridor(c:CanvasRenderingContext2D,w:CorridorWorld,background:HTMLImageElement|null,finn:HTMLImageElement|null,guard:HTMLImageElement|null){
@@ -13,7 +13,7 @@ export function drawCorridor(c:CanvasRenderingContext2D,w:CorridorWorld,backgrou
   // ceiling camera cone — same geometry the world uses for detection
   const beam=w.cameraBeam();const seeing=w.cameraSeesPlayer();const camX=sx(beam.origin);c.save();c.globalAlpha=seeing?.32:.18;c.fillStyle=seeing?C.alarm:C.glass;c.beginPath();c.moveTo(camX,150);c.lineTo(sx(beam.left),410);c.lineTo(sx(beam.right),410);c.closePath();c.fill();c.restore();rect(c,camX-13,140,26,12,'#252d49');rect(c,camX-3,150,6,4,C.alarm);txt(c,'CAM',camX-14,134,9,C.glass);
   // guards
-  for(const g of w.guards){const x=sx(g.x);c.save();c.globalAlpha=g.state==='alert'?.28:.14;c.fillStyle=C.alarm;c.beginPath();c.moveTo(x,355);c.lineTo(x+(g.dir*250),290);c.lineTo(x+(g.dir*250),415);c.closePath();c.fill();c.restore();if(!drawWalker(c,guard,RIGS.guardStage3,{key:g,worldX:g.x,screenX:x,feetY:w.floorY,height:GUARD_HEIGHT,facing:g.dir})){rect(c,x-9,336,18,30,'#20283c');rect(c,x-12,326,24,15,'#293652');}txt(c,g.state==='alert'?'!':'SEC',x-13,298,10,g.state==='alert'?C.alarm:C.paper);}
+  for(const g of w.guards){const x=sx(g.x);c.save();c.globalAlpha=g.state==='alert'?.28:.14;c.fillStyle=C.alarm;c.beginPath();c.moveTo(x,355);c.lineTo(x+(g.dir*250),290);c.lineTo(x+(g.dir*250),415);c.closePath();c.fill();c.restore();if(!drawWalker(c,guard,RIGS.guardStage3,{key:g,worldX:g.x,screenX:x,feetY:w.floorY,height:GUARD_HEIGHT,facing:g.dir})){rect(c,x-9,336,18,30,'#20283c');rect(c,x-12,326,24,15,'#293652');}drawAwareness(c,g,x,w.floorY-GUARD_HEIGHT);}
   // player
   const px=sx(w.player.x);const feet=w.player.y+w.playerHalfHeight;
   const nearBarrier=w.barriers.some(b=>w.player.facing>0?b.x-w.player.x>0&&b.x-w.player.x<90:w.player.x-(b.x+b.w)>0&&w.player.x-(b.x+b.w)<90);

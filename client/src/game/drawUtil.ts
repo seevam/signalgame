@@ -16,6 +16,7 @@ export const RIGS={
   finnIdle:{top:15,hip:73,foot:115,cx:63,facing:1},
   guardIdle:{top:11,hip:73,foot:119,cx:63,facing:1},
   guardAlert:{top:5,hip:72,foot:123,cx:65,facing:-1},
+  tech:{top:11,hip:84,foot:116,cx:63,facing:1},          // nurse-idle.png, used for the lab technicians
 } satisfies Record<string,SpriteRig>;
 
 export const FINN_HEIGHT=88;
@@ -104,4 +105,22 @@ export function drawWalker(c:CanvasRenderingContext2D,img:CanvasImageSource|null
   }
   c.restore();
   return true;
+}
+
+/** Awareness meter and state glyph over a guard's head: how close he is to spotting Finn. */
+export function drawAwareness(c:CanvasRenderingContext2D,g:{state:string;awareness:number},x:number,headY:number){
+  const a=Math.max(0,Math.min(1,g.awareness));
+  const glyph=g.state==='alert'||g.state==='chase'?'!':g.state==='investigate'?'?':'';
+  c.save();
+  if(a>.02||glyph){
+    const w=30,h=4,bx=Math.round(x-w/2),by=Math.round(headY-12);
+    c.fillStyle='rgba(12,14,24,.8)';c.fillRect(bx-1,by-1,w+2,h+2);
+    c.fillStyle=a>.66?'#f7768e':a>.33?'#e0af68':'#9aa8ce';c.fillRect(bx,by,Math.round(w*a),h);
+  }
+  if(glyph){
+    const pulse=1+.15*Math.sin(performance.now()/90);
+    c.font=`bold ${Math.round(16*pulse)}px ui-monospace,monospace`;c.textAlign='center';
+    c.fillStyle=glyph==='?'?'#e0af68':'#f7768e';c.fillText(glyph,x,headY-18);
+  }
+  c.restore();
 }

@@ -3,6 +3,9 @@
 - `client/src/App.tsx` owns the single game route.
 - `client/src/pages/Home.tsx` hosts the full-screen game shell and HUD.
 - `client/src/game/stages.ts` owns campaign progression: stage count, per-stage metadata, the stage→world factory, and the unlocked-stage value persisted in `localStorage`.
+- `client/src/game/stealth.ts` holds the shared `Guard`: patrol with pauses at lane ends, detection that scales with distance (point blank ≈3× the edge rate), running seen 22% further (spec), alerted guards that stop and keep turning to follow Finn, and `investigate` / `chase` states. Every stage's guards are `Guard` instances.
+- `client/src/game/autopilot.ts` is a stealth autopilot that plays any stage through a small `StealthStage` view each world implements (`watchers`, `covers`, `hazardAt`, `goal`). It drives `?demo` and `test_playability.ts`.
+- `client/src/game/campaign.ts` holds stages 5–9 as per-stage data (`DEFS`: documents, cover, guards, key item) plus one signature rule each in `stageRules`.
 - `client/src/game/physics.ts` holds the shared movement constants (gravity, and a jump velocity derived from the spec's 53px apex) so every stage jumps the same height.
 - `client/src/game/drawUtil.ts` draws every character through `drawWalker`, a procedural walk cycle for single-frame sprites: it splits the sprite at the hip, bobs the body, and narrows the legs toward the feet in strips (apart at each footfall, together as they pass). The cycle advances with distance moved, so feet don't skate, and speed picks walk or run. `RIGS` holds each sprite's measured top, hip, sole row, body centre and native facing; `guard-stage3.png` and `guard-alert.png` face left, everything else faces right. Sprites keep their real proportions and their soles sit on the floor line. Adding a sprite means measuring it into `RIGS`.
 - `client/src/game/scene.ts` owns the Babylon Engine lifecycle, runtime sprite loading, animation frame selection, and a lightweight 2D canvas renderer driven by the Babylon render loop.
@@ -31,7 +34,7 @@ A world owns every gameplay shape — camera beams (`cameraBeam()`), hide spots 
 
 ## Checks
 
-`test_regressions.ts` asserts one scenario per gameplay bug that has shipped (each fails on the code before its fix). `test_stages.ts` plays every stage to a win with its demo driver. `test_progression.ts` and `test_campaign.ts` check each stage's win gate. Run them with `pnpm exec tsx <file>`.
+`test_playability.ts` is the design guard-rail: on every stage the autopilot must win, while holding → or sprinting straight through must lose. `test_mechanics.ts` checks each stage mechanic. `test_regressions.ts` asserts one scenario per gameplay bug that has shipped (each fails on the code before its fix). `test_stages.ts` plays every stage to a win with its demo driver. `test_progression.ts` and `test_campaign.ts` check each stage's win gate. Run them with `pnpm exec tsx <file>`.
 
 ## Deploying
 
