@@ -32,3 +32,8 @@ A world owns every gameplay shape — camera beams (`cameraBeam()`), hide spots 
 ## Checks
 
 `test_regressions.ts` asserts one scenario per gameplay bug that has shipped (each fails on the code before its fix). `test_stages.ts` plays every stage to a win with its demo driver. `test_progression.ts` and `test_campaign.ts` check each stage's win gate. Run them with `pnpm exec tsx <file>`.
+
+## Deploying
+
+The game is static: everything a player needs is in `dist/public` after `vite build`. Static hosts publish that folder — `vercel.json` sets it for Vercel. `server/index.ts` is an optional Express server for hosting it yourself with `pnpm build && pnpm start`. Never publish `dist/` itself: its top level holds the compiled server (`dist/index.js`), not the game.
+
