@@ -25,7 +25,7 @@ for (let stage = 1; stage <= TOTAL_STAGES; stage++) {
 const finished: any = createWorldForStage(1);
 finished.start(false);
 finished.pickups.forEach((p: any) => (p.taken = true));
-finished.player.x = 900;
+finished.player.x = 2470;
 finished.step(DT);
 if (finished.mode !== 'win') throw new Error('Stage 1 win setup failed');
 finished.press('d');

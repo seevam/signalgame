@@ -20,7 +20,8 @@ for(const stage of [5,6,7,9]){const c=new CampaignWorld(stage);c.start();c.playe
 
 // Stage 1: camera detection used a wider, differently-phased beam than the one drawn on screen.
 scenario('Stage 1',()=>{
-{const g=new GameWorld();g.start();let outside=0;for(let t=0;t<6.2;t+=0.02){g.time=t;const b=g.cameraBeam();for(let x=250;x<=780;x+=4){g.player.x=x;if(g.cameraSeesPlayer()&&(x<b.left-10||x>b.right+10))outside++;}}
+{const g=new GameWorld();g.start();let outside=0,inside=0;for(let t=0;t<6.2;t+=0.02){g.time=t;const beams=g.cameraBeams();for(let x=40;x<=g.width-20;x+=4){g.player.x=x;if(!g.cameraSeesPlayer())continue;inside++;if(!beams.some(b=>x>=b.left-10&&x<=b.right+10))outside++;}}
+  check('stage 1: the cameras actually detect (scan is not vacuous)',inside>100,`${inside} detections`);
   check('stage 1: camera only detects inside the drawn beam (±body width)',outside===0,`${outside} detections outside`);}
 });
 
@@ -45,8 +46,9 @@ scenario('Stage 2',()=>{
 
 // Stage 2: the ceiling camera was drawn but had no detection logic at all.
 scenario('Stage 2',()=>{
-{const k=new CorridorWorld();k.start();k.guards.forEach(g=>{g.x=g.x<1000?170:1830;g.dir=g.x<1000?-1:1;});k.player.x=1100;run(k,7);
-  check('stage 2: standing under the camera builds suspicion',k.suspicion>30,`suspicion ${k.suspicion.toFixed(1)}`);
+{const k=new CorridorWorld();k.start();k.guards=[];k.player.x=1000;let rose=false,fell=false;
+  for(let i=0;i<60*7;i++){const before=k.suspicion;k.step(DT);if(k.cameraSeesPlayer()&&k.suspicion>before)rose=true;if(!k.cameraSeesPlayer()&&k.suspicion<before)fell=true;}
+  check('stage 2: the camera raises suspicion while its beam is on Finn, and it decays after',rose&&fell);
   const h=new CorridorWorld();h.start();h.guards.forEach(g=>{g.x=g.x<1000?170:1830;g.dir=g.x<1000?-1:1;});h.player.x=990;h.press('e');run(h,7);
   check('stage 2: hiding in the linen cart beats the camera',h.player.hidden&&h.suspicion===0);}
 });
@@ -83,8 +85,8 @@ scenario('Stage 4',()=>{
 
 // Stage 7: "LIGHTS ON — the torches can see you now" changed nothing.
 scenario('Stage 7',()=>{
-{const dark=new CampaignWorld(7);dark.start();dark.guard.x=1300;dark.guard.dir=-1;dark.player.x=1110;run(dark,0.5);
-  const lit=new CampaignWorld(7);lit.start();lit.switchOn=true;lit.guard.x=1300;lit.guard.dir=-1;lit.player.x=1110;run(lit,0.5);
+{const dark=new CampaignWorld(7);dark.start();dark.lightsOn=false;dark.guard.x=1300;dark.guard.dir=-1;dark.player.x=1110;run(dark,0.5);
+  const lit=new CampaignWorld(7);lit.start();lit.lightsOn=true;lit.guard.x=1300;lit.guard.dir=-1;lit.player.x=1110;run(lit,0.5);
   check('stage 7: turning the lights on lets the guard see further',dark.suspicion===0&&lit.suspicion>0);}
 });
 
@@ -92,6 +94,23 @@ scenario('Stage 7',()=>{
 scenario('Restarting left cameraX at the far end of the level, so the ',()=>{
 for(const [name,w] of [['corridor',new CorridorWorld()],['archives',new ArchivesWorld()],['vault',new VaultWorld()]] as const){(w as any).start();(w as any).cameraX=600;(w as any).start();
   check(`${name}: restart resets the camera`,(w as any).cameraX===0);}
+});
+
+// Jump keys were only sampled once per frame, so a tap that pressed and released between two frames was lost.
+scenario('Jump',()=>{
+for(const [name,w] of [['stage 1',new GameWorld()],['corridor',new CorridorWorld()],['archives',new ArchivesWorld()],['vault',new VaultWorld()],['campaign',new CampaignWorld(5)]] as const){
+  const world=w as any;world.start();world.player.x=120;world.press(' ');world.release(' ');const y0=world.player.y;
+  for(let i=0;i<10;i++)world.step(DT);
+  check(`${name}: a jump tap between frames still jumps`,world.player.y<y0-20,`rose ${(y0-world.player.y).toFixed(0)}px`);}
+});
+
+// Stage 1 counted every grounded frame as a landing (gravity dips Finn below the floor and the clamp
+// snaps him back), so the landing timer and its floor shadow never switched off.
+scenario('Stage 1 landing',()=>{
+  const g=new GameWorld();g.start();g.player.x=150;run(g,1);
+  check('stage 1: standing still is not a landing',g.player.landingTimer===0,`landingTimer ${g.player.landingTimer}`);
+  g.press(' ');let landed=false;for(let i=0;i<90;i++){g.step(DT);if(g.player.landingTimer>0)landed=true;}
+  check('stage 1: a real jump still lands',landed);
 });
 
 if(failures){console.error(`\n${failures} regression check(s) failed`);process.exit(1);}
